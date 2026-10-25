@@ -722,7 +722,7 @@
         <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
         <div class="upload-icon"><i class="fas fa-arrow-up-from-bracket"></i></div>
         <div class="upload-title">Klik atau seret gambar ke sini</div>
-        <div class="upload-sub">Maks. 5MB per file</div>
+        <div class="upload-sub">Maks. 10MB per file</div>
         <div class="fmt-chips">
             <span class="fchip">JPEG</span>
             <span class="fchip">PNG</span>
@@ -823,7 +823,7 @@
 </main>
 
 <footer>
-     &copy; <span id="yr"></span> ImageAIDetect by <a href="https://github.com/RidwanzAnphelibelll" target="_blank" rel="noopener noreferrer">RSCoders</a>
+     &copy; <span id="yr"></span> ImageAIDetect by <a href="https://github.com/RidwanzAnphelibelll/ImageAIDetect" target="_blank" rel="noopener noreferrer">RSCoders</a>
 </footer>
 
 <div class="toast" id="toast">
@@ -869,7 +869,7 @@
     function setFile(file) {
         const ok = ['image/jpeg', 'image/png', 'image/webp'];
         if (!ok.includes(file.type)) { toast('Hanya JPEG, PNG, WEBP!', 'error'); return; }
-        if (file.size > 5242880)    { toast('Maks. 5MB!', 'error'); return; }
+        if (file.size > 10485760)    { toast('Maks. 10MB!', 'error'); return; }
         currentFile = file;
         hideErr();
         resultArea.style.display = 'none';
