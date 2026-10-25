@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="ImageAIDetect — Deteksi apakah gambar dibuat oleh AI atau asli.">
+    <title>ImageAIDetect</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2308090a'/><path fill='%235e6ad2' d='M16 5l8 3.5v7c0 5-3.5 9-8 10.5C11.5 24.5 8 20.5 8 15.5v-7z'/><path fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M13 15.5l2 2 4-4'/></svg>" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg:          #08090a;
+            --bg2:         #0c0d0f;
+            --s1:          #111316;
+            --s2:          #161820;
+            --s3:          #1c1f27;
+            --s4:          #23262f;
+            --b1:          rgba(255,255,255,0.06);
+            --b2:          rgba(255,255,255,0.09);
+            --b3:          rgba(255,255,255,0.14);
+            --t1:          #eeeef0;
+            --t2:          #a0a2b0;
+            --t3:          #606270;
+            --t4:          #383a45;
+            --ind:         #5e6ad2;
+            --ind2:        #4d5abf;
+            --ind-dim:     rgba(94,106,210,0.1);
+            --ind-border:  rgba(94,106,210,0.25);
+            --green:       #3dd68c;
+            --green-dim:   rgba(61,214,140,0.08);
+            --green-b:     rgba(61,214,140,0.2);
+            --red:         #e05c52;
+            --red-dim:     rgba(224,92,82,0.08);
+            --red-b:       rgba(224,92,82,0.2);
+            --amber:       #d49b3f;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+
+        body {
+            font-family:            'Inter', system-ui, sans-serif;
+            background:             var(--bg);
+            color:                  var(--t1);
+            min-height:             100vh;
+            display:                flex;
+            flex-direction:         column;
+            -webkit-font-smoothing: antialiased;
+            font-size:              14px;
+        }
+
+        .grid-bg {
+            position:         fixed;
+            inset:            0;
+            background-image: linear-gradient(var(--b1) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--b1) 1px, transparent 1px);
+            background-size:  48px 48px;
+            pointer-events:   none;
+            z-index:          0;
+            mask-image:       radial-gradient(ellipse 90% 50% at 50% 0%, black, transparent);
+        }
+
+        nav {
+            position:        sticky;
+            top:             0;
+            z-index:         100;
+            height:          52px;
+            display:         flex;
+            align-items:     center;
+            justify-content: space-between;
+            padding:         0 1.25rem;
+            background:      rgba(8,9,10,0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom:   1px solid var(--b1);
+            flex-shrink:     0;
+        }
+
+        .nav-left {
+            display:     flex;
+            align-items: center;
+            gap:         0.55rem;
+        }
+
+        .nav-icon {
+            width:           30px;
+            height:          30px;
+            background:      var(--ind);
+            border-radius:   7px;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            font-size:       0.78rem;
+            color:           #fff;
+            flex-shrink:     0;
+        }
+
+        .nav-title {
+            font-size:      0.9rem;
+            font-weight:    700;
+            letter-spacing: -0.025em;
+            color:          var(--t1);
+        }
+
+        .nav-title em {
+            font-style: normal;
+            color:      var(--ind);
+        }
+
+        .nav-pill {
+            font-size:      0.58rem;
+            font-weight:    700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background:     var(--s3);
+            color:          var(--t3);
+            border:         1px solid var(--b2);
+            border-radius:  4px;
+            padding:        0.2rem 0.5rem;
+        }
+
+        main {
+            position:  relative;
+            z-index:   1;
+            flex:      1;
+            padding:   2.25rem 1rem 5rem;
+            max-width: 580px;
+            margin:    0 auto;
+            width:     100%;
+        }
+
+        .page-head { margin-bottom: 1.75rem; }
+
+        .eyebrow {
+            display:        flex;
+            align-items:    center;
+            gap:            0.4rem;
+            font-size:      0.65rem;
+            font-weight:    700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color:          var(--ind);
+            margin-bottom:  0.7rem;
+        }
+
+        .eyebrow-dot {
+            width:         5px;
+            height:        5px;
+            border-radius: 50%;
+            background:    var(--ind);
+            flex-shrink:   0;
+        }
+
+        .page-head h1 {
+            font-size:      1.55rem;
+            font-weight:    700;
+            letter-spacing: -0.035em;
+            line-height:    1.25;
+            color:          var(--t1);
+            margin-bottom:  0.55rem;
+        }
+
+        .page-head p {
+            font-size:   0.82rem;
+            color:       var(--t2);
+            line-height: 1.65;
+        }
+
+        .upload-box {
+            background:    var(--s1);
+            border:        1px solid var(--b2);
+            border-radius: 10px;
+            padding:       2rem 1.5rem;
+            text-align:    center;
+            cursor:        pointer;
+            position:      relative;
+            transition:    background 0.2s, border-color 0.2s;
+            margin-bottom: 0.65rem;
+        }
+
+        .upload-box:hover,
+        .upload-box.drag-over {
+            background:   var(--s2);
+            border-color: var(--ind-border);
+        }
+
+        .upload-box input[type="file"] {
+            position: absolute;
+            inset:    0;
+            opacity:  0;
+            cursor:   pointer;
+            width:    100%;
+            height:   100%;
+        }
+
+        .upload-icon {
+            width:           42px;
+            height:          42px;
+            background:      var(--s3);
+            border:          1px solid var(--b2);
+            border-radius:   9px;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            margin:          0 auto 0.85rem;
+            font-size:       1rem;
+            color:           var(--t3);
+            transition:      all 0.2s;
+        }
+
+        .upload-box:hover .upload-icon,
+        .upload-box.drag-over .upload-icon {
+            background:   var(--ind-dim);
+            border-color: var(--ind-border);
+            color:        var(--ind);
+        }
+
+        .upload-title {
+            font-size:     0.85rem;
+            font-weight:   600;
+            color:         var(--t1);
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-sub {
+            font-size:     0.75rem;
+            color:         var(--t3);
+            margin-bottom: 0.9rem;
+        }
+
+        .fmt-chips {
+            display:         flex;
+            justify-content: center;
+            gap:             0.3rem;
+        }
+
+        .fchip {
+            font-size:      0.6rem;
+            font-weight:    700;
+            letter-spacing: 0.06em;
+            font-family:    'JetBrains Mono', monospace;
+            background:     var(--s4);
+            color:          var(--t3);
+            border:         1px solid var(--b1);
+            border-radius:  4px;
+            padding:        0.18rem 0.48rem;
+        }
+
+        .file-row {
+            display:       none;
+            align-items:   center;
+            gap:           0.65rem;
+            background:    var(--s1);
+            border:        1px solid var(--b2);
+            border-radius: 8px;
+            padding:       0.65rem 0.85rem;
+            margin-bottom: 0.65rem;
+            animation:     fadeUp 0.2s ease;
+        }
+
+        .file-row.show { display: flex; }
+
+        .file-thumb {
+            width:         42px;
+            height:        42px;
+            border-radius: 6px;
+            object-fit:    cover;
+            border:        1px solid var(--b2);
+            flex-shrink:   0;
+        }
+
+        .file-meta { flex: 1; min-width: 0; }
+
+        .file-name {
+            font-size:     0.8rem;
+            font-weight:   600;
+            color:         var(--t1);
+            white-space:   nowrap;
+            overflow:      hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size:   0.67rem;
+            color:       var(--t3);
+            margin-top:  0.15rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn-rm {
+            background:      transparent;
+            border:          1px solid var(--b2);
+            color:           var(--t3);
+            width:           26px;
+            height:          26px;
+            border-radius:   5px;
+            cursor:          pointer;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            font-size:       0.7rem;
+            transition:      all 0.15s;
+            flex-shrink:     0;
+        }
+
+        .btn-rm:hover { border-color: var(--red-b); color: var(--red); background: var(--red-dim); }
+
+        .btn-detect {
+            width:           100%;
+            height:          40px;
+            background:      var(--ind);
+            border:          none;
+            border-radius:   8px;
+            color:           #fff;
+            font-family:     inherit;
+            font-size:       0.83rem;
+            font-weight:     600;
+            letter-spacing:  -0.01em;
+            cursor:          pointer;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            gap:             0.45rem;
+            transition:      background 0.2s, opacity 0.2s;
+        }
+
+        .btn-detect:hover:not(:disabled) { background: var(--ind2); }
+
+        .btn-detect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .spinner {
+            width:         14px;
+            height:        14px;
+            border:        2px solid rgba(255,255,255,0.25);
+            border-left-color: #fff;
+            border-radius: 50%;
+            animation:     spin 0.65s linear infinite;
+            flex-shrink:   0;
+        }
+
+        .err-row {
+            display:       none;
+            align-items:   center;
+            gap:           0.5rem;
+            background:    var(--red-dim);
+            border:        1px solid var(--red-b);
+            border-radius: 7px;
+            padding:       0.65rem 0.85rem;
+            font-size:     0.78rem;
+            color:         var(--red);
+            margin-top:    0.65rem;
+        }
+
+        .err-row.show { display: flex; animation: fadeUp 0.2s ease; }
+
+        .sep {
+            display:     flex;
+            align-items: center;
+            gap:         0.75rem;
+            margin:      1.75rem 0 1.25rem;
+        }
+
+        .sep-line  { flex: 1; height: 1px; background: var(--b1); }
+
+        .sep-label {
+            font-size:      0.62rem;
+            font-weight:    700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color:          var(--t4);
+            flex-shrink:    0;
+        }
+
+        .result-wrap { animation: fadeUp 0.3s ease; }
+
+        .img-frame {
+            border-radius:   8px;
+            overflow:        hidden;
+            border:          1px solid var(--b2);
+            background:      var(--s1);
+            margin-bottom:   0.65rem;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            max-height:      240px;
+        }
+
+        .img-frame img {
+            width:      100%;
+            max-height: 240px;
+            object-fit: contain;
+            display:    block;
+        }
+
+        .verdict-bar {
+            border-radius: 9px;
+            padding:       1rem 1.1rem;
+            display:       flex;
+            align-items:   center;
+            justify-content: space-between;
+            gap:           0.85rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .verdict-bar.v-ai   { background: var(--red-dim);   border: 1px solid var(--red-b); }
+        .verdict-bar.v-real { background: var(--green-dim); border: 1px solid var(--green-b); }
+
+        .vb-left {
+            display:     flex;
+            align-items: center;
+            gap:         0.75rem;
+            min-width:   0;
+        }
+
+        .vb-icon {
+            width:           36px;
+            height:          36px;
+            border-radius:   7px;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            font-size:       0.9rem;
+            flex-shrink:     0;
+        }
+
+        .verdict-bar.v-ai   .vb-icon { background: rgba(224,92,82,0.14);  color: var(--red); }
+        .verdict-bar.v-real .vb-icon { background: rgba(61,214,140,0.14); color: var(--green); }
+
+        .vb-tag {
+            font-size:      0.6rem;
+            font-weight:    700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            margin-bottom:  0.2rem;
+        }
+
+        .verdict-bar.v-ai   .vb-tag { color: var(--red); }
+        .verdict-bar.v-real .vb-tag { color: var(--green); }
+
+        .vb-title {
+            font-size:      0.88rem;
+            font-weight:    700;
+            letter-spacing: -0.02em;
+            color:          var(--t1);
+            white-space:    nowrap;
+            overflow:       hidden;
+            text-overflow:  ellipsis;
+        }
+
+        .vb-right { flex-shrink: 0; text-align: right; }
+
+        .vb-conf-num {
+            font-size:      1.25rem;
+            font-weight:    700;
+            font-family:    'JetBrains Mono', monospace;
+            letter-spacing: -0.03em;
+            line-height:    1;
+        }
+
+        .verdict-bar.v-ai   .vb-conf-num { color: var(--red); }
+        .verdict-bar.v-real .vb-conf-num { color: var(--green); }
+
+        .vb-conf-label {
+            font-size:  0.6rem;
+            color:      var(--t3);
+            margin-top: 0.15rem;
+        }
+
+        .scores-row {
+            display:       grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap:           0.5rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .sc-box {
+            background:    var(--s1);
+            border:        1px solid var(--b1);
+            border-radius: 8px;
+            padding:       0.85rem 0.7rem;
+            text-align:    center;
+        }
+
+        .sc-label {
+            font-size:      0.6rem;
+            font-weight:    700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color:          var(--t3);
+            margin-bottom:  0.4rem;
+        }
+
+        .sc-val {
+            font-size:      0.92rem;
+            font-weight:    700;
+            font-family:    'JetBrains Mono', monospace;
+            letter-spacing: -0.02em;
+            margin-bottom:  0.4rem;
+        }
+
+        .sc-box.sa .sc-val { color: var(--red); }
+        .sc-box.sr .sc-val { color: var(--green); }
+        .sc-box.sf .sc-val { color: var(--amber); }
+
+        .sc-track {
+            height:        3px;
+            background:    var(--s4);
+            border-radius: 2px;
+            overflow:      hidden;
+        }
+
+        .sc-fill {
+            height:        100%;
+            border-radius: 2px;
+            transition:    width 0.6s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        .sc-box.sa .sc-fill { background: var(--red); }
+        .sc-box.sr .sc-fill { background: var(--green); }
+        .sc-box.sf .sc-fill { background: var(--amber); }
+
+        .panel {
+            background:    var(--s1);
+            border:        1px solid var(--b1);
+            border-radius: 8px;
+            overflow:      hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .panel-head {
+            padding:        0.55rem 0.9rem;
+            border-bottom:  1px solid var(--b1);
+            font-size:      0.6rem;
+            font-weight:    700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color:          var(--t3);
+        }
+
+        .panel-body { padding: 0 0.9rem; }
+
+        .gen-row {
+            display:     flex;
+            align-items: center;
+            gap:         0.6rem;
+            padding:     0.58rem 0;
+        }
+
+        .gen-row + .gen-row { border-top: 1px solid var(--b1); }
+
+        .gen-num {
+            font-size:   0.6rem;
+            font-weight: 700;
+            color:       var(--t4);
+            font-family: 'JetBrains Mono', monospace;
+            width:       14px;
+            text-align:  center;
+            flex-shrink: 0;
+        }
+
+        .gen-name {
+            font-size:      0.76rem;
+            font-weight:    500;
+            color:          var(--t1);
+            min-width:      88px;
+            text-transform: capitalize;
+            font-family:    'JetBrains Mono', monospace;
+            flex-shrink:    0;
+        }
+
+        .gen-track {
+            flex:          1;
+            height:        3px;
+            background:    var(--s4);
+            border-radius: 2px;
+            overflow:      hidden;
+        }
+
+        .gen-fill {
+            height:        100%;
+            background:    var(--ind);
+            border-radius: 2px;
+            transition:    width 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        .gen-pct {
+            font-size:   0.68rem;
+            font-weight: 600;
+            color:       var(--t2);
+            font-family: 'JetBrains Mono', monospace;
+            min-width:   40px;
+            text-align:  right;
+            flex-shrink: 0;
+        }
+
+        .kv-row {
+            display:         flex;
+            align-items:     center;
+            justify-content: space-between;
+            padding:         0.6rem 0;
+            font-size:       0.78rem;
+        }
+
+        .kv-row + .kv-row { border-top: 1px solid var(--b1); }
+
+        .kv-k {
+            color:       var(--t2);
+            font-weight: 500;
+        }
+
+        .kv-v {
+            color:       var(--t1);
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            font-size:   0.72rem;
+        }
+
+        .btn-secondary {
+            width:           100%;
+            height:          38px;
+            background:      transparent;
+            border:          1px solid var(--b2);
+            border-radius:   7px;
+            color:           var(--t2);
+            font-family:     inherit;
+            font-size:       0.78rem;
+            font-weight:     500;
+            cursor:          pointer;
+            display:         flex;
+            align-items:     center;
+            justify-content: center;
+            gap:             0.4rem;
+            transition:      border-color 0.2s, color 0.2s;
+            margin-top:      0.65rem;
+        }
+
+        .btn-secondary:hover { border-color: var(--b3); color: var(--t1); }
+
+        .toast {
+            position:        fixed;
+            bottom:          1.25rem;
+            right:           1.25rem;
+            background:      var(--s2);
+            border:          1px solid var(--b2);
+            border-radius:   8px;
+            padding:         0.65rem 0.95rem;
+            font-size:       0.78rem;
+            color:           var(--t1);
+            display:         flex;
+            align-items:     center;
+            gap:             0.5rem;
+            transform:       translateY(80px);
+            opacity:         0;
+            transition:      all 0.25s cubic-bezier(0.4,0,0.2,1);
+            z-index:         999;
+            max-width:       280px;
+            pointer-events:  none;
+            backdrop-filter: blur(12px);
+        }
+
+        .toast.show    { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .toast.success .ti { color: var(--green); }
+        .toast.error   .ti { color: var(--red); }
+
+        footer {
+            position:   relative;
+            z-index:    1;
+            text-align: center;
+            padding:    1rem;
+            font-size:  0.68rem;
+            color:      var(--t4);
+            border-top: 1px solid var(--b1);
+        }
+
+        footer a { color: var(--ind); text-decoration: none; }
+        footer a:hover { opacity: 0.75; }
+
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 480px) {
+            main          { padding: 1.5rem 0.875rem 4rem; }
+            .page-head h1 { font-size: 1.3rem; }
+            .scores-row   { gap: 0.4rem; }
+            .sc-box       { padding: 0.75rem 0.5rem; }
+            .sc-val       { font-size: 0.82rem; }
+            .toast        { right: 0.875rem; bottom: 0.875rem; max-width: calc(100vw - 1.75rem); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<nav>
+    <div class="nav-left">
+        <div class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill="white" d="M16 3l10 4.5v9c0 6-4 11-10 13C10 27.5 6 22.5 6 16.5v-9z"/>
+                <path fill="none" stroke="#5e6ad2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M12 16.5l2.5 2.5 5.5-5.5"/>
+            </svg>
+        </div>
+        <span class="nav-title">ImageAI<em>Detect</em></span>
+    </div>
+    <span class="nav-pill">Beta</span>
+</nav>
+
+<main>
+    <div class="page-head">
+        <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            IMAGE AI Detection
+        </div>
+        <h1>Deteksi Gambar<br>Buatan AI</h1>
+        <p>Upload gambar untuk mengetahui apakah dibuat oleh AI, deepfake, atau asli — lengkap dengan probabilitas generator yang terdeteksi.</p>
+    </div>
+
+    <div class="upload-box" id="uploadBox">
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+        <div class="upload-icon"><i class="fas fa-arrow-up-from-bracket"></i></div>
+        <div class="upload-title">Klik atau seret gambar ke sini</div>
+        <div class="upload-sub">Maks. 5MB per file</div>
+        <div class="fmt-chips">
+            <span class="fchip">JPEG</span>
+            <span class="fchip">PNG</span>
+            <span class="fchip">WEBP</span>
+        </div>
+    </div>
+
+    <div class="file-row" id="fileRow">
+        <img class="file-thumb" id="fileThumb" src="" alt="">
+        <div class="file-meta">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+        </div>
+        <button class="btn-rm" id="fileRm" title="Hapus"><i class="fas fa-xmark"></i></button>
+    </div>
+
+    <button class="btn-detect" id="detectBtn">
+        <i class="fas fa-shield-halved"></i>
+        <span>Jalankan Deteksi</span>
+    </button>
+
+    <div class="err-row" id="errRow">
+        <i class="fas fa-circle-exclamation"></i>
+        <span id="errText"></span>
+    </div>
+
+    <div id="resultArea" style="display:none">
+
+        <div class="sep">
+            <div class="sep-line"></div>
+            <div class="sep-label">Hasil Analisis</div>
+            <div class="sep-line"></div>
+        </div>
+
+        <div class="result-wrap">
+
+            <div class="img-frame">
+                <img id="resultImg" src="" alt="Analyzed Image">
+            </div>
+
+            <div class="verdict-bar" id="verdictBar">
+                <div class="vb-left">
+                    <div class="vb-icon"><i id="vbIcon" class="fas fa-shield-halved"></i></div>
+                    <div>
+                        <div class="vb-tag" id="vbTag"></div>
+                        <div class="vb-title" id="vbTitle"></div>
+                    </div>
+                </div>
+                <div class="vb-right">
+                    <div class="vb-conf-num" id="vbConf"></div>
+                    <div class="vb-conf-label">confidence</div>
+                </div>
+            </div>
+
+            <div class="scores-row">
+                <div class="sc-box sa">
+                    <div class="sc-label">AI Generated</div>
+                    <div class="sc-val" id="sAi">—</div>
+                    <div class="sc-track"><div class="sc-fill" id="bAi" style="width:0%"></div></div>
+                </div>
+                <div class="sc-box sr">
+                    <div class="sc-label">Asli</div>
+                    <div class="sc-val" id="sReal">—</div>
+                    <div class="sc-track"><div class="sc-fill" id="bReal" style="width:0%"></div></div>
+                </div>
+                <div class="sc-box sf">
+                    <div class="sc-label">Deepfake</div>
+                    <div class="sc-val" id="sFake">—</div>
+                    <div class="sc-track"><div class="sc-fill" id="bFake" style="width:0%"></div></div>
+                </div>
+            </div>
+
+            <div class="panel" id="genPanel" style="display:none">
+                <div class="panel-head">Generator AI Terdeteksi</div>
+                <div class="panel-body" id="genBody"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">Info File</div>
+                <div class="panel-body">
+                    <div class="kv-row">
+                        <span class="kv-k">Resolusi</span>
+                        <span class="kv-v" id="kRes">—</span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-k">Format</span>
+                        <span class="kv-v" id="kFmt">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-secondary" id="resetBtn">
+                <i class="fas fa-rotate-left"></i> Analisis Gambar Lain
+            </button>
+
+        </div>
+    </div>
+</main>
+
+<footer>
+     &copy; <span id="yr"></span> ImageAIDetect by <a href="https://github.com/RidwanzAnphelibelll" target="_blank" rel="noopener noreferrer">RSCoders</a>
+</footer>
+
+<div class="toast" id="toast">
+    <i class="ti fas fa-check-circle" id="toastIcon"></i>
+    <span id="toastMsg"></span>
+</div>
+
+<script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+
+    let currentFile = null;
+
+    const uploadBox  = document.getElementById('uploadBox');
+    const fileInput  = document.getElementById('fileInput');
+    const fileRow    = document.getElementById('fileRow');
+    const detectBtn  = document.getElementById('detectBtn');
+    const errRow     = document.getElementById('errRow');
+    const resultArea = document.getElementById('resultArea');
+
+    function toast(msg, type = 'success') {
+        const el   = document.getElementById('toast');
+        const icon = document.getElementById('toastIcon');
+        document.getElementById('toastMsg').textContent = msg;
+        el.className   = `toast ${type} show`;
+        icon.className = `ti fas ${type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'}`;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    function showErr(msg) {
+        document.getElementById('errText').textContent = msg;
+        errRow.classList.add('show');
+    }
+
+    function hideErr() { errRow.classList.remove('show'); }
+
+    function fmtBytes(b) {
+        if (b < 1024)     return b + ' B';
+        if (b < 1048576)  return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(1) + ' MB';
+    }
+
+    function setFile(file) {
+        const ok = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!ok.includes(file.type)) { toast('Hanya JPEG, PNG, WEBP!', 'error'); return; }
+        if (file.size > 5242880)    { toast('Maks. 5MB!', 'error'); return; }
+        currentFile = file;
+        hideErr();
+        resultArea.style.display = 'none';
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = fmtBytes(file.size);
+        const r = new FileReader();
+        r.onload = (e) => { document.getElementById('fileThumb').src = e.target.result; };
+        r.readAsDataURL(file);
+        fileRow.classList.add('show');
+    }
+
+    function clearFile() {
+        currentFile     = null;
+        fileInput.value = '';
+        fileRow.classList.remove('show');
+        document.getElementById('fileThumb').src = '';
+        hideErr();
+    }
+
+    uploadBox.addEventListener('dragover',  (e) => { e.preventDefault(); uploadBox.classList.add('drag-over'); });
+    uploadBox.addEventListener('dragleave', ()  => uploadBox.classList.remove('drag-over'));
+    uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBox.classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+    document.getElementById('fileRm').addEventListener('click', clearFile);
+
+    detectBtn.addEventListener('click', async () => {
+        hideErr();
+        if (!currentFile) { toast('Pilih gambar dulu!', 'error'); return; }
+
+        const fd = new FormData();
+        fd.append('image', currentFile);
+
+        detectBtn.disabled  = true;
+        detectBtn.innerHTML = '<div class="spinner"></div><span>Menganalisis...</span>';
+
+        try {
+            const res  = await fetch('/api/detect', { method: 'POST', body: fd });
+            const json = await res.json();
+
+            if (json.status && json.data) {
+                renderResult(json.data);
+                toast('Analisis selesai!');
+            } else {
+                showErr(json.message || 'Terjadi kesalahan.');
+                toast(json.message || 'Gagal!', 'error');
+            }
+        } catch {
+            showErr('Gagal terhubung ke server!');
+            toast('Koneksi gagal!', 'error');
+        } finally {
+            detectBtn.disabled  = false;
+            detectBtn.innerHTML = '<i class="fas fa-shield-halved"></i><span>Jalankan Deteksi</span>';
+        }
+    });
+
+    function renderResult(d) {
+        const isAi = d.scores.ai_generated > 0.5;
+        const aiP  = d.scores.ai_generated      * 100;
+        const rlP  = d.scores.not_ai_generated  * 100;
+        const fkP  = d.scores.deepfake          * 100;
+
+        const bar = document.getElementById('verdictBar');
+        bar.className = `verdict-bar ${isAi ? 'v-ai' : 'v-real'}`;
+
+        document.getElementById('vbIcon').className  = `fas ${isAi ? 'fa-triangle-exclamation' : 'fa-circle-check'}`;
+        document.getElementById('vbTag').textContent  = isAi ? 'Terdeteksi AI' : 'Gambar Asli';
+        document.getElementById('vbTitle').textContent = d.verdict;
+        document.getElementById('vbConf').textContent  = d.confidence + '%';
+
+        document.getElementById('sAi').textContent   = aiP.toFixed(1) + '%';
+        document.getElementById('sReal').textContent = rlP.toFixed(1) + '%';
+        document.getElementById('sFake').textContent = fkP.toFixed(1) + '%';
+
+        setTimeout(() => {
+            document.getElementById('bAi').style.width   = Math.min(aiP, 100)  + '%';
+            document.getElementById('bReal').style.width = Math.min(rlP, 100) + '%';
+            document.getElementById('bFake').style.width = Math.min(fkP, 100) + '%';
+        }, 50);
+
+        const genPanel = document.getElementById('genPanel');
+        const genBody  = document.getElementById('genBody');
+
+        if (d.topGenerators && d.topGenerators.length > 0) {
+            genPanel.style.display = 'block';
+            genBody.innerHTML = d.topGenerators.map((g, i) => `
+                <div class="gen-row">
+                    <span class="gen-num">${i + 1}</span>
+                    <span class="gen-name">${g.name}</span>
+                    <div class="gen-track">
+                        <div class="gen-fill" style="width:${Math.min(parseFloat(g.percent), 100)}%"></div>
+                    </div>
+                    <span class="gen-pct">${g.percent}%</span>
+                </div>
+            `).join('');
+        } else {
+            genPanel.style.display = 'none';
+        }
+
+        document.getElementById('kRes').textContent = d.media.width && d.media.height
+            ? `${d.media.width} × ${d.media.height} px`
+            : '—';
+        document.getElementById('kFmt').textContent = d.extension?.toUpperCase() || '—';
+
+        document.getElementById('resultImg').src = d.mediaUrl || document.getElementById('fileThumb').src;
+
+        resultArea.style.display = 'block';
+        resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        clearFile();
+        resultArea.style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+</script>
+</body>
+</html>
