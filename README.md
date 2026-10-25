@@ -1,3 +1,3 @@
 ## ImageAIDetect.
 
-[Live Demo](https://vercel-deploys.vercel.app)
+[Live Demo](https://image-ai-detect.vercel.app/)
